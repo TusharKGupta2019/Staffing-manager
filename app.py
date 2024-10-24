@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Initialize session state for storing data
 if 'team_members' not in st.session_state:
