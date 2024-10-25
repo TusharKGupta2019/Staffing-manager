@@ -38,11 +38,6 @@ months = list(calendar.month_name)[1:]  # Skip the first empty string
 # Allow users to select multiple months
 selected_months = st.multiselect("Select Month(s):", options=months, default=[months[current_month - 1]])
 
-# Display the selected months and year
-if selected_months:
-    selected_month_names = ", ".join(selected_months)
-    st.write(f"Selected Month(s): {selected_month_names} {current_year}")
-
 # Step 3: User inputs their week cycle
 st.subheader("Select Start of Your Week")
 week_start_options = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
@@ -127,27 +122,42 @@ if st.button("Show Schedule"):
     # Prepare data for display in table format
     schedule_data = []
     
-    for member, details in st.session_state.team_members.items():
-        schedule_data.append({
-            "Member Name": member,
-            "Shifts": ", ".join(details['shifts']),
-            "Week Offs": ", ".join(details['week_offs'])
-        })
+    # Loop through each selected month and generate data for each day of that month
+    for month in selected_months:
+        month_num = months.index(month) + 1  # Get month number (1-12)
+        days_in_month = calendar.monthrange(current_year, month_num)[1]  # Get number of days in month
+        
+        for day in range(1, days_in_month + 1):
+            date_obj = datetime(current_year, month_num, day)
+            day_of_week = date_obj.strftime('%A')  # Get day of the week
+            
+            for member, details in st.session_state.team_members.items():
+                presence_status = "P" if day_of_week not in details['week_offs'] else "WO"
+                
+                schedule_data.append({
+                    "Month": month,
+                    "Date": day,
+                    "Day": day_of_week,
+                    "Member Name": member,
+                    "Status": presence_status,
+                })
 
     # Create a DataFrame from the schedule data
     schedule_df = pd.DataFrame(schedule_data)
-    
-    # Display the schedule in table format
-    if not schedule_df.empty:
-        st.write(f"**Schedule for {st.session_state.team_client_name}**")
-        if selected_months:
-            month_str = ", ".join(selected_months)
-            st.write(f"Selected Month(s): {month_str} {current_year}")
-        else:
-            st.write(f"Selected Month(s): None")
 
-        # Show the DataFrame as a table
-        st.dataframe(schedule_df)
+    # Display the schedule in table format with specified column names
+    if not schedule_df.empty:
+        schedule_pivot_df = schedule_df.pivot_table(index=["Member Name"], 
+                                                     columns=["Date"], 
+                                                     values="Status", 
+                                                     aggfunc='first', 
+                                                     fill_value='')
+
+        # Displaying headers correctly with Streamlit's dataframe function 
+        st.write(f"**Schedule for {st.session_state.team_client_name}**")
+        
+        # Show the DataFrame as a table with Streamlit's dataframe function 
+        st.dataframe(schedule_pivot_df)
 
 # Step 8: Handle leave requests (optional)
 st.subheader("Leave Request Management")
