@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 import calendar
 
 # Initialize session state for storing data
@@ -27,29 +27,21 @@ if st.session_state.team_client_name:
     st.write(f"Current Team/Client: {st.session_state.team_client_name}")
 
 # Step 2: Schedule Month Selection
-st.subheader("Select Schedule Month")
+st.subheader("Select Schedule Months")
 current_date = datetime.now()
 current_month = current_date.month
 current_year = current_date.year
 
 # Create a list of months for selection
 months = list(calendar.month_name)[1:]  # Skip the first empty string
-month_options = ["Current Month", "Next Month"] + months
 
-selected_month_option = st.selectbox("Select Month:", month_options)
+# Allow users to select multiple months
+selected_months = st.multiselect("Select Month(s):", options=months, default=[months[current_month - 1]])
 
-if selected_month_option == "Current Month":
-    selected_year = current_year
-    selected_month = current_month
-elif selected_month_option == "Next Month":
-    selected_year = current_year if current_month < 12 else current_year + 1
-    selected_month = (current_month % 12) + 1
-else:
-    selected_month = month_options.index(selected_month_option)
-    selected_year = current_year
-
-# Display the selected month and year
-st.write(f"Selected Month: {calendar.month_name[selected_month]} {selected_year}")
+# Display the selected months and year
+if selected_months:
+    selected_month_names = ", ".join(selected_months)
+    st.write(f"Selected Month(s): {selected_month_names} {current_year}")
 
 # Step 3: User inputs their week cycle
 week_start = st.selectbox("Select the start of your week:", ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])
