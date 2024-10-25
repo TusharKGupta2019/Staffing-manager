@@ -89,15 +89,16 @@ if st.button("Set Shift and Week Off"):
 # Step 6: Show Schedule Button
 if st.button("Show Schedule"):
     # Prepare data for display in table format
-    schedule_data = []
+    schedule_data = {}
 
     # Loop through each selected month and generate dates for each day of that month
     for month in selected_months:
         month_num = months.index(month) + 1  # Get month number (1-12)
         days_in_month = calendar.monthrange(current_year, month_num)[1]  # Get number of days in month
         
-        # Create a dictionary to hold shifts for each member by day
-        shifts_by_day = {day: {} for day in range(1, days_in_month + 1)}
+        # Initialize schedule data structure for each member
+        for member in st.session_state.team_members.keys():
+            schedule_data[member] = [''] * days_in_month
         
         for day in range(1, days_in_month + 1):
             date_obj = datetime(current_year, month_num, day)
@@ -105,36 +106,26 @@ if st.button("Show Schedule"):
             
             for member, details in st.session_state.team_members.items():
                 if day_of_week not in details['week_offs']:
-                    shifts_today = "P" if details['shifts'] else "WO"
+                    schedule_data[member][day - 1] = "P"  # Present (P)
                 else:
-                    shifts_today = "WO"
-                
-                shifts_by_day[day][member] = shifts_today
-        
-        # Append data to schedule_data with appropriate formatting
-        for day, members_shifts in shifts_by_day.items():
-            schedule_data.append({
-                "Date": f"{day:02d}",
-                "Day": day_of_week,
-                "Month": month,
-                **members_shifts,
-            })
+                    schedule_data[member][day - 1] = "WO"  # Week Off (WO)
 
     # Create a DataFrame from the schedule data
-    schedule_df = pd.DataFrame(schedule_data)
+    schedule_df = pd.DataFrame(schedule_data, index=[f"{day}" for day in range(1, days_in_month + 1)])
 
-    # Set up a pivot table to organize data by Member Name and Days of Month
-    pivot_table_df = schedule_df.pivot_table(index=['Month', 'Day'], columns='Member Name', values='Date', aggfunc='first', fill_value='')
-
-    # Display the schedule in table format with specified column names
-    if not pivot_table_df.empty:
-        pivot_table_df.columns.name = None  # Remove column name for cleaner display
+    # Display the schedule with appropriate headers
+    if not schedule_df.empty:
+        # Set up multi-index columns for better display
+        header_columns = pd.MultiIndex.from_product([[f"{month}"], ["Member Name"] + [str(day) for day in range(1, days_in_month + 1)]])
         
-        # Display the DataFrame as a table with month header
+        # Create final DataFrame with proper formatting
+        final_schedule_df = pd.DataFrame(schedule_df.values.T, columns=schedule_df.index, index=schedule_df.columns)
+        
+        # Display the DataFrame as a table with Streamlit's dataframe function 
         st.write(f"**Schedule for {st.session_state.team_client_name} - {selected_months[0]}**")
         
         # Show the DataFrame as a table with Streamlit's dataframe function 
-        st.dataframe(pivot_table_df)
+        st.dataframe(final_schedule_df)
 
 # Step 7: Handle leave requests (optional)
 st.subheader("Leave Request Management")
