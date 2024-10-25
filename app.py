@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 import calendar
 
 # Initialize session state for storing data
@@ -83,8 +83,10 @@ week_off = st.text_input("Enter week off (e.g., Saturday):")
 if st.button("Set Shift and Week Off"):
     if selected_member in st.session_state.team_members:
         # Store shift timings and week offs for the selected member
-        st.session_state.team_members[selected_member]['shifts'].append(shift_time)
-        st.session_state.team_members[selected_member]['week_offs'].append(week_off)
+        if shift_time:
+            st.session_state.team_members[selected_member]['shifts'].append(shift_time)
+        if week_off:
+            st.session_state.team_members[selected_member]['week_offs'].append(week_off)
         st.success(f"Shift and week off set for {selected_member}.")
     else:
         st.warning("Member not found.")
@@ -105,23 +107,25 @@ if st.button("Show Schedule"):
             day_of_week = date_obj.strftime('%A')  # Get day of the week
             
             for member, details in st.session_state.team_members.items():
-                shifts_today = [shift for shift in details['shifts'] if day_of_week not in details['week_offs']]
+                shifts_today = details['shifts'] if day_of_week not in details['week_offs'] else []
                 
-                if shifts_today:
-                    schedule_data.append({
-                        "Date": date_str,
-                        "Day": day_of_week,
-                        "Month": month,
-                        "Member Name": member,
-                        "Shifts": ", ".join(shifts_today),
-                        "Week Offs": ", ".join(details['week_offs'])
-                    })
+                schedule_data.append({
+                    "Date": date_str,
+                    "Day": day_of_week,
+                    "Month": month,
+                    "Member Name": member,
+                    "Shifts": ", ".join(shifts_today),
+                    "Week Offs": ", ".join(details['week_offs'])
+                })
 
     # Create a DataFrame from the schedule data
     schedule_df = pd.DataFrame(schedule_data)
     
-    # Display the schedule in table format
+    # Display the schedule in table format with specified column names
     if not schedule_df.empty:
+        schedule_df.columns = ["Date", "Day", "Month", "Member Name", "Shifts", "Week Offs"]  # Set column names
+        
+        # Display the DataFrame as a table
         st.write(f"**Schedule for {st.session_state.team_client_name}**")
         
         # Show the DataFrame as a table
