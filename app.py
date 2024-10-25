@@ -98,9 +98,7 @@ if st.button("Show Schedule"):
         
         # Initialize schedule data structure for each member
         for member in st.session_state.team_members.keys():
-            # Create a list to hold presence status for each day of the month
-            if member not in schedule_data:
-                schedule_data[member] = [''] * days_in_month
+            schedule_data[member] = [''] * days_in_month
         
         for day in range(1, days_in_month + 1):
             date_obj = datetime(current_year, month_num, day)
@@ -112,16 +110,22 @@ if st.button("Show Schedule"):
                 else:
                     schedule_data[member][day - 1] = "WO"  # Week Off (WO)
 
-    # Create a DataFrame from the schedule data
+    # Create a DataFrame from the schedule data with proper indexing
     schedule_df = pd.DataFrame(schedule_data, index=[f"{day}" for day in range(1, days_in_month + 1)])
 
     # Display the schedule with appropriate headers
     if not schedule_df.empty:
-        # Set up multi-index columns for better display
-        header_columns = pd.MultiIndex.from_product([[f"{month}"], ["Member Name"] + [str(day) for day in range(1, days_in_month + 1)]])
+        # Prepare multi-index columns with month and days of the month
+        headers = pd.MultiIndex.from_product([[f"{month}"], ["Member Name"] + [str(day) for day in range(1, days_in_month + 1)]])
         
         # Create final DataFrame with proper formatting
         final_schedule_df = pd.DataFrame(schedule_df.values.T, columns=schedule_df.index, index=schedule_df.columns)
+
+        # Displaying Day Names above each column (optional)
+        day_names_row = pd.DataFrame(columns=headers)
+        day_names_row.loc[0] = [''] + [calendar.day_name[(start_index + i) % 7] for i in range(days_in_month)]
+        
+        final_schedule_df.columns.names = ['Month', 'Day']
         
         # Display the DataFrame as a table with Streamlit's dataframe function 
         st.write(f"**Schedule for {st.session_state.team_client_name} - {selected_months[0]}**")
