@@ -147,17 +147,48 @@ if st.button("Show Schedule"):
 
     # Display the schedule in table format with specified column names
     if not schedule_df.empty:
-        schedule_pivot_df = schedule_df.pivot_table(index=["Member Name"], 
+        # Pivoting the DataFrame to have Member Names as rows and Dates as columns.
+        pivot_schedule_df = schedule_df.pivot_table(index=["Member Name"], 
                                                      columns=["Date"], 
                                                      values="Status", 
                                                      aggfunc='first', 
                                                      fill_value='')
 
         # Displaying headers correctly with Streamlit's dataframe function 
-        st.write(f"**Schedule for {st.session_state.team_client_name}**")
+        header_row_names = [f"{month} Schedule"] * len(selected_months) + [''] * (len(pivot_schedule_df.columns) - len(selected_months))
+        
+        pivot_schedule_df.columns.names = ['Date']
         
         # Show the DataFrame as a table with Streamlit's dataframe function 
-        st.dataframe(schedule_pivot_df)
+        col1, col2, col3, col4, col5, col6, col7, col8, col9, col10, col11, col12=st.columns(len(pivot_schedule_df.columns)+1)
+
+        
+        with col1:
+            st.write(f"**Schedule for {st.session_state.team_client_name}**")
+        
+        with col2:
+            for month in selected_months:
+                month_num=months.index(month)+1
+                
+                days_in_month=calendar.monthrange(current_year,month_num)[1]
+                
+                day_names=[calendar.day_name[(start_index+i)%7] for i in range(days_in_month)]
+                
+                day_names.insert(0," ")
+                
+                # Create a DataFrame from pivot_schedule_df with Month as header.
+                final_schedule_df=pd.DataFrame(pivot_schedule_df.values.T,
+                                               columns=pivot_schedule_df.index,
+                                               index=day_names)
+                
+                final_schedule_df.index.name='Days'
+                
+                final_schedule_df.columns.name='Members'
+                
+                # Show final schedule DataFrame with Streamlit's dataframe function 
+                if not final_schedule_df.empty:
+                    with col3:
+                        st.dataframe(final_schedule_df)
 
 # Step 8: Handle leave requests (optional)
 st.subheader("Leave Request Management")
