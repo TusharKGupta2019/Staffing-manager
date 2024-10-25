@@ -38,11 +38,6 @@ months = list(calendar.month_name)[1:]  # Skip the first empty string
 # Allow users to select multiple months
 selected_months = st.multiselect("Select Month(s):", options=months, default=[months[current_month - 1]])
 
-# Display the selected months and year
-if selected_months:
-    selected_month_names = ", ".join(selected_months)
-    st.write(f"Selected Month(s): {selected_month_names} {current_year}")
-
 # Step 3: User inputs their week cycle
 st.subheader("Select Start of Your Week")
 week_start_options = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
@@ -101,37 +96,45 @@ if st.button("Show Schedule"):
         month_num = months.index(month) + 1  # Get month number (1-12)
         days_in_month = calendar.monthrange(current_year, month_num)[1]  # Get number of days in month
         
+        # Create a dictionary to hold shifts for each member by day
+        shifts_by_day = {day: {} for day in range(1, days_in_month + 1)}
+        
         for day in range(1, days_in_month + 1):
-            date_str = f"{day:02d}-{month_num:02d}-{current_year}"
             date_obj = datetime(current_year, month_num, day)
             day_of_week = date_obj.strftime('%A')  # Get day of the week
             
             for member, details in st.session_state.team_members.items():
-                shifts_today = details['shifts'] if day_of_week not in details['week_offs'] else []
+                if day_of_week not in details['week_offs']:
+                    shifts_today = "P" if details['shifts'] else "WO"
+                else:
+                    shifts_today = "WO"
                 
-                schedule_data.append({
-                    "Date": date_str,
-                    "Day": day_of_week,
-                    "Month": month,
-                    "Member Name": member,
-                    "Shifts": ", ".join(shifts_today),
-                    "Week Offs": ", ".join(details['week_offs'])
-                })
+                shifts_by_day[day][member] = shifts_today
+        
+        # Append data to schedule_data with appropriate formatting
+        for day, members_shifts in shifts_by_day.items():
+            schedule_data.append({
+                "Date": f"{day:02d}",
+                "Day": day_of_week,
+                "Month": month,
+                **members_shifts,
+            })
 
     # Create a DataFrame from the schedule data
     schedule_df = pd.DataFrame(schedule_data)
-    
+
+    # Set up a pivot table to organize data by Member Name and Days of Month
+    pivot_table_df = schedule_df.pivot_table(index=['Month', 'Day'], columns='Member Name', values='Date', aggfunc='first', fill_value='')
+
     # Display the schedule in table format with specified column names
-    if not schedule_df.empty:
-        schedule_df.columns = ["Date", "Day", "Month", "Member Name", "Shifts", "Week Offs"]  # Set column names
+    if not pivot_table_df.empty:
+        pivot_table_df.columns.name = None  # Remove column name for cleaner display
         
-        # Display the DataFrame as a table
-        st.write(f"**Schedule for {st.session_state.team_client_name}**")
+        # Display the DataFrame as a table with month header
+        st.write(f"**Schedule for {st.session_state.team_client_name} - {selected_months[0]}**")
         
-        # Show the DataFrame as a table
-        st.dataframe(schedule_df)
-    else:
-        st.write("No shifts scheduled for the selected months.")
+        # Show the DataFrame as a table with Streamlit's dataframe function 
+        st.dataframe(pivot_table_df)
 
 # Step 7: Handle leave requests (optional)
 st.subheader("Leave Request Management")
