@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import calendar
 
 # Initialize session state for storing data
@@ -93,13 +93,29 @@ if st.button("Set Shift and Week Off"):
 if st.button("Show Schedule"):
     # Prepare data for display in table format
     schedule_data = []
-    
-    for member, details in st.session_state.team_members.items():
-        schedule_data.append({
-            "Member Name": member,
-            "Shifts": ", ".join(details['shifts']),
-            "Week Offs": ", ".join(details['week_offs'])
-        })
+
+    # Loop through each selected month and generate dates for each day of that month
+    for month in selected_months:
+        month_num = months.index(month) + 1  # Get month number (1-12)
+        days_in_month = calendar.monthrange(current_year, month_num)[1]  # Get number of days in month
+        
+        for day in range(1, days_in_month + 1):
+            date_str = f"{day:02d}-{month_num:02d}-{current_year}"
+            date_obj = datetime(current_year, month_num, day)
+            day_of_week = date_obj.strftime('%A')  # Get day of the week
+            
+            for member, details in st.session_state.team_members.items():
+                shifts_today = [shift for shift in details['shifts'] if day_of_week not in details['week_offs']]
+                
+                if shifts_today:
+                    schedule_data.append({
+                        "Date": date_str,
+                        "Day": day_of_week,
+                        "Month": month,
+                        "Member Name": member,
+                        "Shifts": ", ".join(shifts_today),
+                        "Week Offs": ", ".join(details['week_offs'])
+                    })
 
     # Create a DataFrame from the schedule data
     schedule_df = pd.DataFrame(schedule_data)
@@ -107,14 +123,11 @@ if st.button("Show Schedule"):
     # Display the schedule in table format
     if not schedule_df.empty:
         st.write(f"**Schedule for {st.session_state.team_client_name}**")
-        if selected_months:
-            month_str = ", ".join(selected_months)
-            st.write(f"Selected Month(s): {month_str} {current_year}")
-        else:
-            st.write(f"Selected Month(s): None")
-
+        
         # Show the DataFrame as a table
         st.dataframe(schedule_df)
+    else:
+        st.write("No shifts scheduled for the selected months.")
 
 # Step 7: Handle leave requests (optional)
 st.subheader("Leave Request Management")
