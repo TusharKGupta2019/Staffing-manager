@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import calendar
 
 # Initialize session state for storing data
@@ -44,7 +44,17 @@ if selected_months:
     st.write(f"Selected Month(s): {selected_month_names} {current_year}")
 
 # Step 3: User inputs their week cycle
-week_start = st.selectbox("Select the start of your week:", ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])
+st.subheader("Select Start of Your Week")
+week_start_options = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+week_start = st.selectbox("Select the start of your week:", week_start_options)
+
+# Calculate end of the week based on start day
+start_index = week_start_options.index(week_start)
+end_index = (start_index + 6) % 7
+week_end = week_start_options[end_index]
+
+st.write(f"End of the week: {week_end}")
+
 st.session_state.week_cycle['start'] = week_start
 
 # Step 4: Team leader enters team members' names
