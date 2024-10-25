@@ -121,11 +121,8 @@ if st.button("Show Schedule"):
         # Create final DataFrame with proper formatting
         final_schedule_df = pd.DataFrame(schedule_df.values.T, columns=schedule_df.index)
 
-        # Set multi-index columns correctly
-        final_schedule_df.columns.names = ['Day', 'Member Name']
-
-        # Displaying Day Names above each column (optional)
-        day_names_row = pd.DataFrame(columns=header_columns)
+        # Set multi-index columns correctly; we want just one level here.
+        final_schedule_df.columns.names = ['Day']
 
         # Displaying headers correctly with Streamlit's dataframe function 
         st.write(f"**Schedule for {st.session_state.team_client_name} - {month}**")
