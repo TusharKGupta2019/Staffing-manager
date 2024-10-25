@@ -82,13 +82,41 @@ week_off = st.text_input("Enter week off (e.g., Saturday):")
 
 if st.button("Set Shift and Week Off"):
     if selected_member in st.session_state.team_members:
+        # Store shift timings and week offs for the selected member
         st.session_state.team_members[selected_member]['shifts'].append(shift_time)
         st.session_state.team_members[selected_member]['week_offs'].append(week_off)
         st.success(f"Shift and week off set for {selected_member}.")
     else:
         st.warning("Member not found.")
 
-# Step 6: Handle leave requests
+# Step 6: Show Schedule Button
+if st.button("Show Schedule"):
+    # Prepare data for display in table format
+    schedule_data = []
+    
+    for member, details in st.session_state.team_members.items():
+        schedule_data.append({
+            "Member Name": member,
+            "Shifts": ", ".join(details['shifts']),
+            "Week Offs": ", ".join(details['week_offs'])
+        })
+
+    # Create a DataFrame from the schedule data
+    schedule_df = pd.DataFrame(schedule_data)
+    
+    # Display the schedule in table format
+    if not schedule_df.empty:
+        st.write(f"**Schedule for {st.session_state.team_client_name}**")
+        if selected_months:
+            month_str = ", ".join(selected_months)
+            st.write(f"Selected Month(s): {month_str} {current_year}")
+        else:
+            st.write(f"Selected Month(s): None")
+
+        # Show the DataFrame as a table
+        st.dataframe(schedule_df)
+
+# Step 7: Handle leave requests (optional)
 st.subheader("Leave Request Management")
 leave_member = st.selectbox("Select member requesting leave:", list(st.session_state.team_members.keys()))
 leave_date = st.date_input("Select leave date:", datetime.now())
@@ -106,7 +134,7 @@ if st.button("Check Schedule"):
     else:
         st.write(f"All team members are off on {leave_date.strftime('%A')}.")
 
-# Approval of leave request
+# Approval of leave request (optional)
 if st.button("Approve Leave"):
     if leave_member in work_schedule:
         work_schedule.remove(leave_member)
