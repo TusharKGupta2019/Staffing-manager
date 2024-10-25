@@ -83,13 +83,46 @@ week_off = st.text_input("Enter week off (e.g., Saturday):")
 if st.button("Set Shift and Week Off"):
     if selected_member in st.session_state.team_members:
         # Store shift timings and week offs for the selected member
-        st.session_state.team_members[selected_member]['shifts'].append(shift_time)
-        st.session_state.team_members[selected_member]['week_offs'].append(week_off)
+        if shift_time:
+            # Add shift only if it's not already present (to avoid duplicates)
+            if shift_time not in st.session_state.team_members[selected_member]['shifts']:
+                st.session_state.team_members[selected_member]['shifts'].append(shift_time)
+        if week_off:
+            # Add week off only if it's not already present (to avoid duplicates)
+            if week_off not in st.session_state.team_members[selected_member]['week_offs']:
+                st.session_state.team_members[selected_member]['week_offs'].append(week_off)
         st.success(f"Shift and week off set for {selected_member}.")
     else:
         st.warning("Member not found.")
 
-# Step 6: Show Schedule Button
+# Step 6: Edit Shift Timings and Week Offs for Each Member
+st.subheader("Edit Shift Timings and Week Offs")
+edit_member = st.selectbox("Select a member to edit:", list(st.session_state.team_members.keys()))
+if edit_member:
+    current_shifts = ", ".join(st.session_state.team_members[edit_member]['shifts'])
+    current_week_offs = ", ".join(st.session_state.team_members[edit_member]['week_offs'])
+    
+    # Display current shifts and week offs for the selected member
+    st.write(f"Current Shifts for {edit_member}: {current_shifts}")
+    st.write(f"Current Week Offs for {edit_member}: {current_week_offs}")
+
+    # Input fields to edit shifts and week offs
+    new_shift_time = st.text_input("Edit shift timings (e.g., 9 AM - 5 PM):", value=current_shifts)
+    new_week_off = st.text_input("Edit week off (e.g., Saturday):", value=current_week_offs)
+
+    if st.button("Update Shift and Week Off"):
+        # Clear previous entries before updating with new values
+        if new_shift_time:
+            # Clear previous shifts before updating with new value(s)
+            st.session_state.team_members[edit_member]['shifts'] = [new_shift_time]
+        if new_week_off:
+            # Clear previous week offs before updating with new value(s)
+            st.session_state.team_members[edit_member]['week_offs'] = [new_week_off]
+        
+        # Notify user of successful update
+        st.success(f"Updated shifts and week off for {edit_member}.")
+
+# Step 7: Show Schedule Button
 if st.button("Show Schedule"):
     # Prepare data for display in table format
     schedule_data = []
@@ -116,7 +149,7 @@ if st.button("Show Schedule"):
         # Show the DataFrame as a table
         st.dataframe(schedule_df)
 
-# Step 7: Handle leave requests (optional)
+# Step 8: Handle leave requests (optional)
 st.subheader("Leave Request Management")
 leave_member = st.selectbox("Select member requesting leave:", list(st.session_state.team_members.keys()))
 leave_date = st.date_input("Select leave date:", datetime.now())
