@@ -2,20 +2,34 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-
 # Initialize session state for storing data
 if 'team_members' not in st.session_state:
     st.session_state.team_members = {}
 if 'week_cycle' not in st.session_state:
     st.session_state.week_cycle = {}
+if 'team_client_name' not in st.session_state:
+    st.session_state.team_client_name = ""
 
-# Step 1: User inputs their week cycle
+# Step 1: User inputs their team/client name
 st.title("Team Schedule Management System")
 
+team_client_name = st.text_input("Enter Team/Client's Name:")
+if st.button("Submit Team/Client Name"):
+    if team_client_name:
+        st.session_state.team_client_name = team_client_name
+        st.success(f"Team/Client name '{team_client_name}' has been set.")
+    else:
+        st.warning("Please enter a valid Team/Client name.")
+
+# Display the entered Team/Client name
+if st.session_state.team_client_name:
+    st.write(f"Current Team/Client: {st.session_state.team_client_name}")
+
+# Step 2: User inputs their week cycle
 week_start = st.selectbox("Select the start of your week:", ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])
 st.session_state.week_cycle['start'] = week_start
 
-# Step 2: Team leader enters team members' names
+# Step 3: Team leader enters team members' names
 st.subheader("Enter Team Members")
 member_name = st.text_input("Enter team member's name:")
 if st.button("Add Member"):
@@ -29,7 +43,7 @@ if st.button("Add Member"):
 st.write("Current Team Members:")
 st.write(list(st.session_state.team_members.keys()))
 
-# Step 3: Enter shift timings and week offs for each member
+# Step 4: Enter shift timings and week offs for each member
 st.subheader("Enter Shift Timings and Week Offs")
 selected_member = st.selectbox("Select a team member:", list(st.session_state.team_members.keys()))
 shift_time = st.text_input("Enter shift timings (e.g., 9 AM - 5 PM):")
@@ -43,7 +57,7 @@ if st.button("Set Shift and Week Off"):
     else:
         st.warning("Member not found.")
 
-# Step 4: Handle leave requests
+# Step 5: Handle leave requests
 st.subheader("Leave Request Management")
 leave_member = st.selectbox("Select member requesting leave:", list(st.session_state.team_members.keys()))
 leave_date = st.date_input("Select leave date:", datetime.now())
