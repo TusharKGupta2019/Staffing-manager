@@ -38,6 +38,11 @@ months = list(calendar.month_name)[1:]  # Skip the first empty string
 # Allow users to select multiple months
 selected_months = st.multiselect("Select Month(s):", options=months, default=[months[current_month - 1]])
 
+# Display the selected months and year
+if selected_months:
+    selected_month_names = ", ".join(selected_months)
+    st.write(f"Selected Month(s): {selected_month_names} {current_year}")
+
 # Step 3: User inputs their week cycle
 st.subheader("Select Start of Your Week")
 week_start_options = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
@@ -78,10 +83,8 @@ week_off = st.text_input("Enter week off (e.g., Saturday):")
 if st.button("Set Shift and Week Off"):
     if selected_member in st.session_state.team_members:
         # Store shift timings and week offs for the selected member
-        if shift_time:
-            st.session_state.team_members[selected_member]['shifts'].append(shift_time)
-        if week_off:
-            st.session_state.team_members[selected_member]['week_offs'].append(week_off)
+        st.session_state.team_members[selected_member]['shifts'].append(shift_time)
+        st.session_state.team_members[selected_member]['week_offs'].append(week_off)
         st.success(f"Shift and week off set for {selected_member}.")
     else:
         st.warning("Member not found.")
@@ -89,46 +92,29 @@ if st.button("Set Shift and Week Off"):
 # Step 6: Show Schedule Button
 if st.button("Show Schedule"):
     # Prepare data for display in table format
-    schedule_data = {}
+    schedule_data = []
+    
+    for member, details in st.session_state.team_members.items():
+        schedule_data.append({
+            "Member Name": member,
+            "Shifts": ", ".join(details['shifts']),
+            "Week Offs": ", ".join(details['week_offs'])
+        })
 
-    # Loop through each selected month and generate dates for each day of that month
-    for month in selected_months:
-        month_num = months.index(month) + 1  # Get month number (1-12)
-        days_in_month = calendar.monthrange(current_year, month_num)[1]  # Get number of days in month
-        
-        # Initialize schedule data structure for each member
-        for member in st.session_state.team_members.keys():
-            schedule_data[member] = [''] * days_in_month
-        
-        for day in range(1, days_in_month + 1):
-            date_obj = datetime(current_year, month_num, day)
-            day_of_week = date_obj.strftime('%A')  # Get day of the week
-            
-            for member, details in st.session_state.team_members.items():
-                if day_of_week not in details['week_offs']:
-                    schedule_data[member][day - 1] = "P"  # Present (P)
-                else:
-                    schedule_data[member][day - 1] = "WO"  # Week Off (WO)
-
-    # Create a DataFrame from the schedule data with proper indexing
-    schedule_df = pd.DataFrame(schedule_data, index=[f"{day}" for day in range(1, days_in_month + 1)])
-
-    # Display the schedule with appropriate headers
+    # Create a DataFrame from the schedule data
+    schedule_df = pd.DataFrame(schedule_data)
+    
+    # Display the schedule in table format
     if not schedule_df.empty:
-        # Prepare multi-index columns with month and days of the month
-        header_columns = pd.MultiIndex.from_product([[month], ["Member Name"] + [str(day) for day in range(1, days_in_month + 1)]])
-        
-        # Create final DataFrame with proper formatting
-        final_schedule_df = pd.DataFrame(schedule_df.values.T, columns=schedule_df.index)
+        st.write(f"**Schedule for {st.session_state.team_client_name}**")
+        if selected_months:
+            month_str = ", ".join(selected_months)
+            st.write(f"Selected Month(s): {month_str} {current_year}")
+        else:
+            st.write(f"Selected Month(s): None")
 
-        # Set multi-index columns correctly; we want just one level here.
-        final_schedule_df.columns.names = ['Day']
-
-        # Displaying headers correctly with Streamlit's dataframe function 
-        st.write(f"**Schedule for {st.session_state.team_client_name} - {month}**")
-        
-        # Show the DataFrame as a table with Streamlit's dataframe function 
-        st.dataframe(final_schedule_df)
+        # Show the DataFrame as a table
+        st.dataframe(schedule_df)
 
 # Step 7: Handle leave requests (optional)
 st.subheader("Leave Request Management")
