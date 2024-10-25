@@ -90,50 +90,27 @@ if st.button("Set Shift and Week Off"):
     else:
         st.warning("Member not found.")
 
-# Step 6: Edit Shift Timings and Week Offs for Each Member
-st.subheader("Edit Shift Timings and Week Offs")
-edit_member = st.selectbox("Select a member to edit:", list(st.session_state.team_members.keys()))
-if edit_member:
-    current_shifts = ", ".join(st.session_state.team_members[edit_member]['shifts'])
-    current_week_offs = ", ".join(st.session_state.team_members[edit_member]['week_offs'])
-    
-    # Display current shifts and week offs for the selected member
-    st.write(f"Current Shifts for {edit_member}: {current_shifts}")
-    st.write(f"Current Week Offs for {edit_member}: {current_week_offs}")
-
-    # Input fields to edit shifts and week offs
-    new_shift_time = st.text_input("Edit shift timings (e.g., 9 AM - 5 PM):", value=current_shifts)
-    new_week_off = st.text_input("Edit week off (e.g., Saturday):", value=current_week_offs)
-
-    if st.button("Update Shift and Week Off"):
-        # Clear previous entries before updating with new values
-        if new_shift_time:
-            # Clear previous shifts before updating with new value(s)
-            st.session_state.team_members[edit_member]['shifts'] = [new_shift_time]
-        if new_week_off:
-            # Clear previous week offs before updating with new value(s)
-            st.session_state.team_members[edit_member]['week_offs'] = [new_week_off]
-        
-        # Notify user of successful update
-        st.success(f"Updated shifts and week off for {edit_member}.")
-
-# Step 7: Show Schedule Button
+# Step 6: Show Schedule Button
 if st.button("Show Schedule"):
     # Prepare data for display in table format
     schedule_data = []
-    
-    # Loop through each selected month and generate data for each day of that month
+
+    # Loop through each selected month and generate dates for each day of that month
     for month in selected_months:
         month_num = months.index(month) + 1  # Get month number (1-12)
         days_in_month = calendar.monthrange(current_year, month_num)[1]  # Get number of days in month
         
+        # Initialize schedule data structure for each member
         for day in range(1, days_in_month + 1):
             date_obj = datetime(current_year, month_num, day)
             day_of_week = date_obj.strftime('%A')  # Get day of the week
             
             for member, details in st.session_state.team_members.items():
-                presence_status = "P" if day_of_week not in details['week_offs'] else "WO"
-                
+                if day_of_week not in details['week_offs']:
+                    presence_status = "P"  # Present (P)
+                else:
+                    presence_status = "WO"  # Week Off (WO)
+
                 schedule_data.append({
                     "Month": month,
                     "Date": day,
@@ -147,50 +124,19 @@ if st.button("Show Schedule"):
 
     # Display the schedule in table format with specified column names
     if not schedule_df.empty:
-        # Pivoting the DataFrame to have Member Names as rows and Dates as columns.
-        pivot_schedule_df = schedule_df.pivot_table(index=["Member Name"], 
+        schedule_pivot_df = schedule_df.pivot_table(index=["Member Name"], 
                                                      columns=["Date"], 
                                                      values="Status", 
                                                      aggfunc='first', 
                                                      fill_value='')
 
         # Displaying headers correctly with Streamlit's dataframe function 
-        header_row_names = [f"{month} Schedule"] * len(selected_months) + [''] * (len(pivot_schedule_df.columns) - len(selected_months))
-        
-        pivot_schedule_df.columns.names = ['Date']
+        st.write(f"**Schedule for {st.session_state.team_client_name}**")
         
         # Show the DataFrame as a table with Streamlit's dataframe function 
-        col1, col2, col3, col4, col5, col6, col7, col8, col9, col10, col11, col12=st.columns(len(pivot_schedule_df.columns)+1)
+        st.dataframe(schedule_pivot_df)
 
-        
-        with col1:
-            st.write(f"**Schedule for {st.session_state.team_client_name}**")
-        
-        with col2:
-            for month in selected_months:
-                month_num=months.index(month)+1
-                
-                days_in_month=calendar.monthrange(current_year,month_num)[1]
-                
-                day_names=[calendar.day_name[(start_index+i)%7] for i in range(days_in_month)]
-                
-                day_names.insert(0," ")
-                
-                # Create a DataFrame from pivot_schedule_df with Month as header.
-                final_schedule_df=pd.DataFrame(pivot_schedule_df.values.T,
-                                               columns=pivot_schedule_df.index,
-                                               index=day_names)
-                
-                final_schedule_df.index.name='Days'
-                
-                final_schedule_df.columns.name='Members'
-                
-                # Show final schedule DataFrame with Streamlit's dataframe function 
-                if not final_schedule_df.empty:
-                    with col3:
-                        st.dataframe(final_schedule_df)
-
-# Step 8: Handle leave requests (optional)
+# Step 7: Handle leave requests (optional)
 st.subheader("Leave Request Management")
 leave_member = st.selectbox("Select member requesting leave:", list(st.session_state.team_members.keys()))
 leave_date = st.date_input("Select leave date:", datetime.now())
