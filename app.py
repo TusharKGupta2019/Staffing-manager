@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
+import calendar
 
 # Initialize session state for storing data
 if 'team_members' not in st.session_state:
@@ -25,11 +26,36 @@ if st.button("Submit Team/Client Name"):
 if st.session_state.team_client_name:
     st.write(f"Current Team/Client: {st.session_state.team_client_name}")
 
-# Step 2: User inputs their week cycle
+# Step 2: Schedule Month Selection
+st.subheader("Select Schedule Month")
+current_date = datetime.now()
+current_month = current_date.month
+current_year = current_date.year
+
+# Create a list of months for selection
+months = list(calendar.month_name)[1:]  # Skip the first empty string
+month_options = ["Current Month", "Next Month"] + months
+
+selected_month_option = st.selectbox("Select Month:", month_options)
+
+if selected_month_option == "Current Month":
+    selected_year = current_year
+    selected_month = current_month
+elif selected_month_option == "Next Month":
+    selected_year = current_year if current_month < 12 else current_year + 1
+    selected_month = (current_month % 12) + 1
+else:
+    selected_month = month_options.index(selected_month_option)
+    selected_year = current_year
+
+# Display the selected month and year
+st.write(f"Selected Month: {calendar.month_name[selected_month]} {selected_year}")
+
+# Step 3: User inputs their week cycle
 week_start = st.selectbox("Select the start of your week:", ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])
 st.session_state.week_cycle['start'] = week_start
 
-# Step 3: Team leader enters team members' names
+# Step 4: Team leader enters team members' names
 st.subheader("Enter Team Members")
 member_name = st.text_input("Enter team member's name:")
 if st.button("Add Member"):
@@ -43,7 +69,7 @@ if st.button("Add Member"):
 st.write("Current Team Members:")
 st.write(list(st.session_state.team_members.keys()))
 
-# Step 4: Enter shift timings and week offs for each member
+# Step 5: Enter shift timings and week offs for each member
 st.subheader("Enter Shift Timings and Week Offs")
 selected_member = st.selectbox("Select a team member:", list(st.session_state.team_members.keys()))
 shift_time = st.text_input("Enter shift timings (e.g., 9 AM - 5 PM):")
@@ -57,7 +83,7 @@ if st.button("Set Shift and Week Off"):
     else:
         st.warning("Member not found.")
 
-# Step 5: Handle leave requests
+# Step 6: Handle leave requests
 st.subheader("Leave Request Management")
 leave_member = st.selectbox("Select member requesting leave:", list(st.session_state.team_members.keys()))
 leave_date = st.date_input("Select leave date:", datetime.now())
