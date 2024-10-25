@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 import calendar
 
 # Initialize session state for storing data
@@ -62,14 +62,17 @@ st.subheader("Enter Team Members")
 member_name = st.text_input("Enter team member's name:")
 if st.button("Add Member"):
     if member_name:
+        # Add member to session state and display success message
         st.session_state.team_members[member_name] = {'shifts': [], 'week_offs': []}
         st.success(f"{member_name} added to the team.")
     else:
         st.warning("Please enter a valid name.")
 
-# Display current team members
-st.write("Current Team Members:")
-st.write(list(st.session_state.team_members.keys()))
+# Display current team members in bullet format
+if st.session_state.team_members:
+    st.write("Current Team Members:")
+    members_list = "\n".join([f"- {name}" for name in st.session_state.team_members.keys()])
+    st.markdown(members_list)
 
 # Step 5: Enter shift timings and week offs for each member
 st.subheader("Enter Shift Timings and Week Offs")
