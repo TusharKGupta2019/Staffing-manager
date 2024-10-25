@@ -98,7 +98,9 @@ if st.button("Show Schedule"):
         
         # Initialize schedule data structure for each member
         for member in st.session_state.team_members.keys():
-            schedule_data[member] = [''] * days_in_month
+            # Create a list to hold presence status for each day of the month
+            if member not in schedule_data:
+                schedule_data[member] = [''] * days_in_month
         
         for day in range(1, days_in_month + 1):
             date_obj = datetime(current_year, month_num, day)
