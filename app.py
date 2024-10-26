@@ -210,3 +210,4 @@ if st.button("Show Schedule"):
                 st.write(f"- Shift timing: {summary['shift_timing']}")
                 st.write(f"- Week off days: {summary['week_off_days']}")
                 st.write("---")
+
