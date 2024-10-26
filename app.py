@@ -151,40 +151,44 @@ if st.button("Show Schedule"):
             # Create schedule data
             schedule_data = []
             for date_info in month_dates:
-                row_data = {
-                    'Date': date_info['date'],
-                    'Day': date_info['day']
-                }
+                working_members = []
+                off_members = []
                 
-                # Add status for each team member
+                # Check each member's status for this day
                 for member, details in st.session_state.team_members.items():
                     if date_info['day'] in details['week_offs']:
-                        status = "Week Off"
-                    elif details['shifts']:
-                        status = details['shifts'][0]  # Using first shift timing
+                        off_members.append(member)
                     else:
-                        status = "No shift assigned"
-                    row_data[member] = status
+                        working_members.append(member)
                 
+                # Create row data
+                row_data = {
+                    'Date': date_info['date'],
+                    'Day': date_info['day'],
+                    'Scheduled to Work': ', '.join(working_members) if working_members else 'None',
+                    'On Week Off': ', '.join(off_members) if off_members else 'None'
+                }
                 schedule_data.append(row_data)
             
             # Create and display DataFrame
             schedule_df = pd.DataFrame(schedule_data)
             
             # Style the DataFrame
-            def highlight_week_off(val):
-                if val == "Week Off":
-                    return 'background-color: #ffcccb'
-                return ''
+            def highlight_rows(row):
+                return ['background-color: #e6ffe6' if row['Scheduled to Work'] != 'None' else '' for _ in row]
             
-            styled_df = schedule_df.style.apply(lambda x: [highlight_week_off(i) for i in x])
+            styled_df = schedule_df.style.apply(highlight_rows, axis=1)
+            
+            # Display the schedule
             st.dataframe(
                 styled_df,
                 hide_index=True,
                 height=400,
                 column_config={
                     "Date": st.column_config.TextColumn("Date", width="medium"),
-                    "Day": st.column_config.TextColumn("Day", width="medium")
+                    "Day": st.column_config.TextColumn("Day", width="medium"),
+                    "Scheduled to Work": st.column_config.TextColumn("Scheduled to Work", width="large"),
+                    "On Week Off": st.column_config.TextColumn("On Week Off", width="large")
                 }
             )
             
@@ -196,3 +200,10 @@ if st.button("Show Schedule"):
                 file_name=f"{month}_{current_year}_schedule.csv",
                 mime="text/csv"
             )
+            
+            # Display summary for the month
+            st.write("### Monthly Summary")
+            for member in st.session_state.team_members:
+                work_days = sum(1 for data in schedule_data if member in data['Scheduled to Work'])
+                off_days = sum(1 for data in schedule_data if member in data['On Week Off'])
+                st.write(f"**{member}**: {work_days} working days, {off_days} off days")
