@@ -71,20 +71,23 @@ if st.session_state.team_members:
 st.subheader("Enter Shift Timings and Week Offs")
 selected_member = st.selectbox("Select a team member:", list(st.session_state.team_members.keys()))
 shift_time = st.text_input("Enter shift timings (e.g., 9 AM - 5 PM):")
-week_off_1 = st.text_input("Enter first week off (e.g., Saturday):")
-week_off_2 = st.text_input("Enter second week off (e.g., Sunday):")
+
+# Dropdowns for selecting two week offs
+week_off_1 = st.selectbox("Select Week Off 1:", ["None", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])
+week_off_2 = st.selectbox("Select Week Off 2:", ["None", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])
 
 if st.button("Set Shift and Week Off"):
     if selected_member in st.session_state.team_members:
         # Store shift timings for the selected member
         if shift_time:
+            # Add shift only if it's not already present (to avoid duplicates)
             if shift_time not in st.session_state.team_members[selected_member]['shifts']:
                 st.session_state.team_members[selected_member]['shifts'].append(shift_time)
         
-        # Store two week offs for the selected member
-        week_offs = [week_off_1, week_off_2]
-        for week_off in week_offs:
-            if week_off and week_off not in st.session_state.team_members[selected_member]['week_offs']:
+        # Store week offs ensuring no duplicates and only two are kept
+        week_offs_to_add = [week_off_1, week_off_2]
+        for week_off in week_offs_to_add:
+            if week_off != "None" and week_off not in st.session_state.team_members[selected_member]['week_offs']:
                 st.session_state.team_members[selected_member]['week_offs'].append(week_off)
         
         # Ensure only two week offs are stored
@@ -109,8 +112,8 @@ if edit_member:
     # Input fields to edit shifts and week offs
     new_shift_time = st.text_input("Edit shift timings (e.g., 9 AM - 5 PM):", value=current_shifts)
     
-    new_week_off_1 = st.text_input("Edit first week off (e.g., Saturday):", value=current_week_offs.split(', ')[0] if current_week_offs else "")
-    new_week_off_2 = st.text_input("Edit second week off (e.g., Sunday):", value=current_week_offs.split(', ')[1] if len(current_week_offs.split(', ')) > 1 else "")
+    new_week_off_1 = st.selectbox("Edit Week Off 1:", ["None"] + [day for day in ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] if day not in current_week_offs.split(", ")])
+    new_week_off_2 = st.selectbox("Edit Week Off 2:", ["None"] + [day for day in ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] if day not in current_week_offs.split(", ")])
     
     if st.button("Update Shift and Week Off"):
         # Clear previous entries before updating with new values
@@ -118,11 +121,11 @@ if edit_member:
             # Clear previous shifts before updating with new value(s)
             st.session_state.team_members[edit_member]['shifts'] = [new_shift_time]
         
-        # Update week offs ensuring only two are kept
+        # Update week offs ensuring only valid selections are stored
         updated_week_offs = []
-        if new_week_off_1 and new_week_off_1 not in updated_week_offs:
+        if new_week_off_1 != "None":
             updated_week_offs.append(new_week_off_1)
-        if new_week_off_2 and new_week_off_2 not in updated_week_offs:
+        if new_week_off_2 != "None":
             updated_week_offs.append(new_week_off_2)
 
         # Store updated values ensuring only two are kept
@@ -237,7 +240,7 @@ if st.button("Show Schedule"):
                 st.write(f"**{member}**:")
                 st.write(f"- Total days in month: {len(month_dates)}")
                 st.write(f"- Working days: {summary['working_days']}")
-                st.write(f"- Week offs: {summary['week offs']}")
+                st.write(f"- Week offs: {summary['week_offs']}")
                 st.write(f"- Shift timing: {summary['shift_timing']}")
                 st.write(f"- Week off days: {summary['week_off_days']}")
                 st.write("---")
