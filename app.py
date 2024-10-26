@@ -148,29 +148,3 @@ if st.button("Show Schedule"):
 
         # Show the DataFrame as a table
         st.dataframe(schedule_df)
-
-# Step 8: Handle leave requests (optional)
-st.subheader("Leave Request Management")
-leave_member = st.selectbox("Select member requesting leave:", list(st.session_state.team_members.keys()))
-leave_date = st.date_input("Select leave date:", datetime.now())
-
-if st.button("Check Schedule"):
-    work_schedule = []
-    for member, details in st.session_state.team_members.items():
-        # Check if the member is scheduled to work on the selected date
-        if leave_date.strftime('%A') not in details['week_offs']:
-            work_schedule.append(member)
-
-    if work_schedule:
-        st.write(f"Team members scheduled to work on {leave_date.strftime('%A')}:")
-        st.write(work_schedule)
-    else:
-        st.write(f"All team members are off on {leave_date.strftime('%A')}.")
-
-# Approval of leave request (optional)
-if st.button("Approve Leave"):
-    if leave_member in work_schedule:
-        work_schedule.remove(leave_member)
-        st.success(f"Leave approved for {leave_member}. Remaining scheduled members: {work_schedule}")
-    else:
-        st.warning(f"{leave_member} is not scheduled to work on this date.")
