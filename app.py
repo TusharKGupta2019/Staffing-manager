@@ -49,13 +49,6 @@ st.subheader("Select Start of Your Week")
 week_start_options = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 week_start = st.selectbox("Select the start of your week:", week_start_options)
 
-# Calculate end of the week based on start day
-start_index = week_start_options.index(week_start)
-end_index = (start_index + 6) % 7
-week_end = week_start_options[end_index]
-
-st.write(f"End of the week: {week_end}")
-
 st.session_state.week_cycle['start'] = week_start
 
 # Step 4: Team leader enters team members' names
@@ -85,11 +78,9 @@ if st.button("Set Shift and Week Off"):
     if selected_member in st.session_state.team_members:
         # Store shift timings and week offs for the selected member
         if shift_time:
-            # Add shift only if it's not already present (to avoid duplicates)
             if shift_time not in st.session_state.team_members[selected_member]['shifts']:
                 st.session_state.team_members[selected_member]['shifts'].append(shift_time)
         if week_off:
-            # Add week off only if it's not already present (to avoid duplicates)
             if week_off not in st.session_state.team_members[selected_member]['week_offs']:
                 st.session_state.team_members[selected_member]['week_offs'].append(week_off)
         st.success(f"Shift and week off set for {selected_member}.")
@@ -112,7 +103,6 @@ if edit_member:
     new_week_off = st.text_input("Edit week off (e.g., Saturday):", value=current_week_offs)
 
     if st.button("Update Shift and Week Off"):
-        # Clear previous entries before updating with new values
         if new_shift_time:
             # Clear previous shifts before updating with new value(s)
             st.session_state.team_members[edit_member]['shifts'] = [new_shift_time]
