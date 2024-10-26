@@ -13,7 +13,6 @@ if 'team_client_name' not in st.session_state:
 
 # Step 1: User inputs their team/client name
 st.title("Team Schedule Management System")
-
 team_client_name = st.text_input("Enter Team/Client's Name:")
 if st.button("Submit Team/Client Name"):
     if team_client_name:
@@ -31,23 +30,19 @@ st.subheader("Select Schedule Months")
 current_date = datetime.now()
 current_month = current_date.month
 current_year = current_date.year
-
 # Create a list of months for selection
 months = list(calendar.month_name)[1:]  # Skip the first empty string
-
 # Allow users to select multiple months
 selected_months = st.multiselect("Select Month(s):", options=months, default=[months[current_month - 1]])
-
 # Display the selected months and year
 if selected_months:
     selected_month_names = ", ".join(selected_months)
     st.write(f"Selected Month(s): {selected_month_names} {current_year}")
 
-# Step 3: User inputs their week cycle
+# Step 3: User inputs their week cycles
 st.subheader("Select Start of Your Week")
 week_start_options = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 week_start = st.selectbox("Select the start of your week:", week_start_options)
-
 st.session_state.week_cycle['start'] = week_start
 
 # Step 4: Team leader enters team members' names
@@ -71,29 +66,14 @@ if st.session_state.team_members:
 st.subheader("Enter Shift Timings and Week Offs")
 selected_member = st.selectbox("Select a team member:", list(st.session_state.team_members.keys()))
 shift_time = st.text_input("Enter shift timings (e.g., 9 AM - 5 PM):")
-
-# Dropdowns for selecting two week offs
-week_off_1 = st.selectbox("Select Week Off 1:", ["None", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])
-week_off_2 = st.selectbox("Select Week Off 2:", ["None", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])
-
-if st.button("Set Shift and Week Off"):
+week_off_1 = st.selectbox("Select first week off (e.g., Saturday):", week_start_options)
+week_off_2 = st.selectbox("Select second week off (e.g., Sunday):", week_start_options)
+if st.button("Set Shift and Week Offs"):
     if selected_member in st.session_state.team_members:
-        # Store shift timings for the selected member
+        # Store shift timings and week offs for the selected member
         if shift_time:
-            # Add shift only if it's not already present (to avoid duplicates)
-            if shift_time not in st.session_state.team_members[selected_member]['shifts']:
-                st.session_state.team_members[selected_member]['shifts'].append(shift_time)
-        
-        # Store week offs ensuring no duplicates and only two are kept
-        week_offs_to_add = [week_off_1, week_off_2]
-        for week_off in week_offs_to_add:
-            if week_off != "None" and week_off not in st.session_state.team_members[selected_member]['week_offs']:
-                st.session_state.team_members[selected_member]['week_offs'].append(week_off)
-        
-        # Ensure only two week offs are stored
-        if len(st.session_state.team_members[selected_member]['week_offs']) > 2:
-            st.session_state.team_members[selected_member]['week_offs'] = st.session_state.team_members[selected_member]['week_offs'][:2]
-
+            st.session_state.team_members[selected_member]['shifts'] = [shift_time]
+        st.session_state.team_members[selected_member]['week_offs'] = [week_off_1, week_off_2]
         st.success(f"Shift and week offs set for {selected_member}.")
     else:
         st.warning("Member not found.")
@@ -104,39 +84,19 @@ edit_member = st.selectbox("Select a member to edit:", list(st.session_state.tea
 if edit_member:
     current_shifts = ", ".join(st.session_state.team_members[edit_member]['shifts'])
     current_week_offs = ", ".join(st.session_state.team_members[edit_member]['week_offs'])
-    
+
     # Display current shifts and week offs for the selected member
     st.write(f"Current Shifts for {edit_member}: {current_shifts}")
     st.write(f"Current Week Offs for {edit_member}: {current_week_offs}")
-
     # Input fields to edit shifts and week offs
     new_shift_time = st.text_input("Edit shift timings (e.g., 9 AM - 5 PM):", value=current_shifts)
-    
-    new_week_off_1 = st.selectbox("Edit Week Off 1:", ["None"] + [day for day in ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] if day not in current_week_offs.split(", ")])
-    new_week_off_2 = st.selectbox("Edit Week Off 2:", ["None"] + [day for day in ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] if day not in current_week_offs.split(", ")])
-    
-    if st.button("Update Shift and Week Off"):
-        # Clear previous entries before updating with new values
+    new_week_off_1 = st.selectbox("Edit first week off:", week_start_options, index=week_start_options.index(st.session_state.team_members[edit_member]['week_offs'][0]))
+    new_week_off_2 = st.selectbox("Edit second week off:", week_start_options, index=week_start_options.index(st.session_state.team_members[edit_member]['week_offs'][1]))
+    if st.button("Update Shift and Week Offs"):
         if new_shift_time:
-            # Clear previous shifts before updating with new value(s)
             st.session_state.team_members[edit_member]['shifts'] = [new_shift_time]
-        
-        # Update week offs ensuring only valid selections are stored
-        updated_week_offs = []
-        if new_week_off_1 != "None":
-            updated_week_offs.append(new_week_off_1)
-        if new_week_off_2 != "None":
-            updated_week_offs.append(new_week_off_2)
-
-        # Store updated values ensuring only two are kept
-        if len(updated_week_offs) > 2:
-            updated_week_offs = updated_week_offs[:2]
-
-        # Update session state with new values
-        st.session_state.team_members[edit_member]['week_offs'] = updated_week_offs
-        
-        # Notify user of successful update
-        st.success(f"Updated shifts and week off for {edit_member}.")
+        st.session_state.team_members[edit_member]['week_offs'] = [new_week_off_1, new_week_off_2]
+        st.success(f"Updated shifts and week offs for {edit_member}.")
 
 # Helper function to get month dates
 def get_month_dates(month, year):
@@ -147,7 +107,7 @@ def get_month_dates(month, year):
         date = datetime(year, month_num, day)
         dates.append({
             'date': date.strftime('%d-%m-%Y'),
-            'day': date.strftime('%A')
+            'day': date.strftime('%A').strip().lower()  # Normalize day name
         })
     return dates
 
@@ -160,51 +120,51 @@ if st.button("Show Schedule"):
     else:
         for month in selected_months:
             st.subheader(f"{month} {current_year} Schedule")
-            
+
             # Get dates for the month
             month_dates = get_month_dates(month, current_year)
-            
+
             # Create DataFrame columns
             columns = ['Member']
-            date_columns = [f"{d['date']}\n{d['day']}" for d in month_dates]
+            date_columns = [f"{d['date']}\n{d['day'].capitalize()}" for d in month_dates]
             columns.extend(date_columns)
-            
+
             # Create rows for each team member
             rows = []
             summary_data = {}  # To store summary information
-            
+
             for member, details in st.session_state.team_members.items():
                 row = [member]  # First column is member name
                 working_days = 0
-                
+
                 # Fill in schedule for each day
                 for date_info in month_dates:
                     is_week_off = any(
-                        week_off.strip().lower() == date_info['day'].lower()
+                        week_off.strip().lower() == date_info['day']
                         for week_off in details['week_offs']
                     )
-                    
+
                     if is_week_off:
                         row.append("Week Off")
                     else:
                         row.append("Scheduled")
                         working_days += 1
-                
+
                 rows.append(row)
-                
+
                 # Calculate summary for this member
                 total_days = len(month_dates)
-                week_offs_counted = sum(1 for day in details['week_offs'] if day.strip().lower() in [date_info['day'].lower() for date_info in month_dates])
+                week_offs = total_days - working_days
                 summary_data[member] = {
                     'working_days': working_days,
-                    'week_offs': week_offs_counted,
+                    'week_offs': week_offs,
                     'shift_timing': ', '.join(details['shifts']),
                     'week_off_days': ', '.join(details['week_offs'])
                 }
-            
+
             # Create DataFrame
             schedule_df = pd.DataFrame(rows, columns=columns)
-            
+
             # Style the DataFrame to look like Excel
             def style_schedule(df):
                 return pd.DataFrame(
@@ -214,9 +174,9 @@ if st.button("Show Schedule"):
                     index=df.index,
                     columns=df.columns
                 )
-            
+
             styled_df = schedule_df.style.apply(lambda _: style_schedule(schedule_df), axis=None)
-            
+
             # Display the schedule
             st.dataframe(
                 styled_df,
@@ -224,7 +184,7 @@ if st.button("Show Schedule"):
                 height=400,
                 use_container_width=True
             )
-            
+
             # Add download button for each month's schedule
             csv = schedule_df.to_csv(index=False)
             st.download_button(
@@ -233,7 +193,7 @@ if st.button("Show Schedule"):
                 file_name=f"{month}_{current_year}_schedule.csv",
                 mime="text/csv"
             )
-            
+
             # Display enhanced monthly summary
             st.write("### Monthly Summary")
             for member, summary in summary_data.items():
