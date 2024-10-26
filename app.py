@@ -66,17 +66,15 @@ if st.session_state.team_members:
 st.subheader("Enter Shift Timings and Week Offs")
 selected_member = st.selectbox("Select a team member:", list(st.session_state.team_members.keys()))
 shift_time = st.text_input("Enter shift timings (e.g., 9 AM - 5 PM):")
-week_off = st.text_input("Enter week off (e.g., Saturday):")
-if st.button("Set Shift and Week Off"):
+week_off_1 = st.selectbox("Select first week off (e.g., Saturday):", week_start_options)
+week_off_2 = st.selectbox("Select second week off (e.g., Sunday):", week_start_options)
+if st.button("Set Shift and Week Offs"):
     if selected_member in st.session_state.team_members:
         # Store shift timings and week offs for the selected member
         if shift_time:
-            if shift_time not in st.session_state.team_members[selected_member]['shifts']:
-                st.session_state.team_members[selected_member]['shifts'].append(shift_time)
-        if week_off:
-            if week_off not in st.session_state.team_members[selected_member]['week_offs']:
-                st.session_state.team_members[selected_member]['week_offs'].append(week_off)
-        st.success(f"Shift and week off set for {selected_member}.")
+            st.session_state.team_members[selected_member]['shifts'] = [shift_time]
+        st.session_state.team_members[selected_member]['week_offs'] = [week_off_1, week_off_2]
+        st.success(f"Shift and week offs set for {selected_member}.")
     else:
         st.warning("Member not found.")
 
@@ -92,17 +90,13 @@ if edit_member:
     st.write(f"Current Week Offs for {edit_member}: {current_week_offs}")
     # Input fields to edit shifts and week offs
     new_shift_time = st.text_input("Edit shift timings (e.g., 9 AM - 5 PM):", value=current_shifts)
-    new_week_off = st.text_input("Edit week off (e.g., Saturday):", value=current_week_offs)
-    if st.button("Update Shift and Week Off"):
+    new_week_off_1 = st.selectbox("Edit first week off:", week_start_options, index=week_start_options.index(st.session_state.team_members[edit_member]['week_offs'][0]))
+    new_week_off_2 = st.selectbox("Edit second week off:", week_start_options, index=week_start_options.index(st.session_state.team_members[edit_member]['week_offs'][1]))
+    if st.button("Update Shift and Week Offs"):
         if new_shift_time:
-            # Clear previous shifts before updating with new value(s)
             st.session_state.team_members[edit_member]['shifts'] = [new_shift_time]
-        if new_week_off:
-            # Clear previous week offs before updating with new value(s)
-            st.session_state.team_members[edit_member]['week_offs'] = [new_week_off]
-
-        # Notify user of successful update
-        st.success(f"Updated shifts and week off for {edit_member}.")
+        st.session_state.team_members[edit_member]['week_offs'] = [new_week_off_1, new_week_off_2]
+        st.success(f"Updated shifts and week offs for {edit_member}.")
 
 # Helper function to get month dates
 def get_month_dates(month, year):
@@ -210,4 +204,3 @@ if st.button("Show Schedule"):
                 st.write(f"- Shift timing: {summary['shift_timing']}")
                 st.write(f"- Week off days: {summary['week_off_days']}")
                 st.write("---")
-
