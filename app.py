@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import calendar
+import numpy as np
 
 # Initialize session state for storing data
 if 'team_members' not in st.session_state:
@@ -148,65 +149,65 @@ if st.button("Show Schedule"):
             # Get dates for the month
             month_dates = get_month_dates(month, current_year)
             
-            # Create schedule data
-            schedule_data = []
-            for date_info in month_dates:
-                working_members = []
-                off_members = []
+            # Create DataFrame columns
+            columns = ['Member']
+            date_columns = [f"{d['date']}\n{d['day']}" for d in month_dates]
+            columns.extend(date_columns)
+            
+            # Create rows for each team member
+            rows = []
+            summary_data = {}  # To store summary information
+            
+            for member, details in st.session_state.team_members.items():
+                row = [member]  # First column is member name
+                working_days = 0
                 
-                # Check each member's status for this day
-                for member, details in st.session_state.team_members.items():
-                    # Check if any of the member's week offs match the current day
-                    is_week_off = False
-                    for week_off in details['week_offs']:
-                        if week_off.strip().lower() == date_info['day'].lower():
-                            is_week_off = True
-                            break
+                # Fill in schedule for each day
+                for date_info in month_dates:
+                    is_week_off = any(
+                        week_off.strip().lower() == date_info['day'].lower()
+                        for week_off in details['week_offs']
+                    )
                     
                     if is_week_off:
-                        off_members.append(member)
+                        row.append("Week Off")
                     else:
-                        working_members.append(f"{member} ({', '.join(details['shifts'])})")
+                        row.append("Scheduled")
+                        working_days += 1
                 
-                # Create row data
-                row_data = {
-                    'Date': date_info['date'],
-                    'Day': date_info['day'],
-                    'Scheduled to Work': ', '.join(working_members) if working_members else 'None',
-                    'On Week Off': ', '.join(off_members) if off_members else 'None'
+                rows.append(row)
+                
+                # Calculate summary for this member
+                total_days = len(month_dates)
+                week_offs = total_days - working_days
+                summary_data[member] = {
+                    'working_days': working_days,
+                    'week_offs': week_offs,
+                    'shift_timing': ', '.join(details['shifts']),
+                    'week_off_days': ', '.join(details['week_offs'])
                 }
-                schedule_data.append(row_data)
             
             # Create DataFrame
-            schedule_df = pd.DataFrame(schedule_data)
+            schedule_df = pd.DataFrame(rows, columns=columns)
             
-            # Style the DataFrame with professional colors
-            def style_schedule(row):
-                styles = []
-                for _ in row:
-                    if row['On Week Off'] != 'None':
-                        # Light gray for off days
-                        styles.append('background-color: #f5f5f5')
-                    elif row['Scheduled to Work'] != 'None':
-                        # Very light blue for working days
-                        styles.append('background-color: #f8f9fc')
-                    else:
-                        styles.append('')
-                return styles
+            # Style the DataFrame to look like Excel
+            def style_schedule(df):
+                return pd.DataFrame(
+                    [
+                        ['background-color: white; color: black; border: 1px solid #c0c0c0'] * len(df.columns)
+                    ] * len(df),
+                    index=df.index,
+                    columns=df.columns
+                )
             
-            styled_df = schedule_df.style.apply(style_schedule, axis=1)
+            styled_df = schedule_df.style.apply(lambda _: style_schedule(schedule_df), axis=None)
             
             # Display the schedule
             st.dataframe(
                 styled_df,
                 hide_index=True,
                 height=400,
-                column_config={
-                    "Date": st.column_config.TextColumn("Date", width="medium"),
-                    "Day": st.column_config.TextColumn("Day", width="medium"),
-                    "Scheduled to Work": st.column_config.TextColumn("Scheduled to Work", width="large"),
-                    "On Week Off": st.column_config.TextColumn("On Week Off", width="large")
-                }
+                use_container_width=True
             )
             
             # Add download button for each month's schedule
@@ -218,15 +219,13 @@ if st.button("Show Schedule"):
                 mime="text/csv"
             )
             
-            # Display summary for the month
+            # Display enhanced monthly summary
             st.write("### Monthly Summary")
-            for member in st.session_state.team_members:
-                work_days = sum(1 for data in schedule_data if member in data['Scheduled to Work'])
-                off_days = sum(1 for data in schedule_data if member in data['On Week Off'])
-                shifts = ', '.join(st.session_state.team_members[member]['shifts'])
-                week_offs = ', '.join(st.session_state.team_members[member]['week_offs'])
+            for member, summary in summary_data.items():
                 st.write(f"**{member}**:")
-                st.write(f"- Working days: {work_days}")
-                st.write(f"- Off days: {off_days}")
-                st.write(f"- Shift timing: {shifts}")
-                st.write(f"- Week offs: {week_offs}")
+                st.write(f"- Total days in month: {len(month_dates)}")
+                st.write(f"- Working days: {summary['working_days']}")
+                st.write(f"- Week offs: {summary['week_offs']}")
+                st.write(f"- Shift timing: {summary['shift_timing']}")
+                st.write(f"- Week off days: {summary['week_off_days']}")
+                st.write("---")
