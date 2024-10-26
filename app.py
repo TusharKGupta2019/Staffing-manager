@@ -66,8 +66,8 @@ if st.session_state.team_members:
 st.subheader("Enter Shift Timings and Week Offs")
 selected_member = st.selectbox("Select a team member:", list(st.session_state.team_members.keys()))
 shift_time = st.text_input("Enter shift timings (e.g., 9 AM - 5 PM):")
-week_off_1 = st.selectbox("Select first week off (e.g., Saturday):", week_start_options)
-week_off_2 = st.selectbox("Select second week off (e.g., Sunday):", week_start_options)
+week_off_1 = st.selectbox("Select first week off:", week_start_options)
+week_off_2 = st.selectbox("Select second week off:", week_start_options, index=(week_start_options.index(week_off_1) + 1) % 7)
 if st.button("Set Shift and Week Offs"):
     if selected_member in st.session_state.team_members:
         # Store shift timings and week offs for the selected member
